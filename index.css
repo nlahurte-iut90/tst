@@ -19,7 +19,7 @@ header {
   transition: all 0.8s ease-in-out;
   backdrop-filter: blur(10px);
   z-index: 5;
-  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, .2), 5px 5px 5px rgba(0, 0, 0, 0.1);
   font-family:'Times New Roman', Times, serif;
 }
 header::before{
@@ -199,19 +199,21 @@ nav #ETHIQUE:hover::after{
 }
 .contenu_1{
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
-  scale: 0.9;
-  height: 800px;
-  border-radius: 45px;
+  scale: 0.7;
+  height: 700px;
+  border-radius: 75px;
   transition: all 0.4s ease-in-out;
   background-color: var(--bleu-clair);
   opacity: 0.6;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
 }
 
 .contenu_1:hover {
   opacity:1;
-  scale: 1;
-  border-radius: 0;
-  box-shadow:none;
+  scale: 0.9;
+  border-radius: 65px;
 }
 .contenu_1 h1{
   text-align: center;
@@ -230,37 +232,41 @@ nav #ETHIQUE:hover::after{
 .contenu_1:hover h1{
   opacity: 1;
 }
+.blocks{
+  display: flex;
+  flex-direction: row;
+  align-items: start;
+  justify-content: start;
+  gap: 30px;
+}
 .blocks div{
   display: inline-block;
-  height: 400px;
+  width: 400px;
   background-color: var(--bleu-moyen);
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  gap: 30px;
-  font-size: 30px;
-  padding: 10px;
-  width: 20%;
   position: relative;
-  margin: 50px;
-  border-radius: 30px;
-  top: 200px;
+  border-radius: 45px;
   transition: all .3s ease-in-out;
   color: black;
-  word-wrap: break-word;
 }
-.blocks div img{
-  width: 100%;
-  height: 50%;
-  border-radius: 30px;
+.block_1{
+  height: 300px;
+  overflow: hidden;
+  margin-top: 0;
+  padding: 30px;
 }
 .block_1 h1{
-  font-size: 41px;
+  font-size: 35px;
   text-align: center;
   position: static;
-  margin-bottom: 0;;
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
 }
 .block_1 p{
   opacity: 0;
+  font-size: 25px;
   margin-top: 0px;
   transition: all 0.4s ease-in-out;
 }
@@ -269,25 +275,28 @@ nav #ETHIQUE:hover::after{
   margin-top: 0px;
 }
 .block_1:hover{
-  top: 190px;
-  box-shadow: 0 0 30px rgba(252, 252, 252, 0.8);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+}
+.block_2{
+  height: 200px;
 }
 .block_2:hover{
-  top: 190px;
   box-shadow: 0 0 30px rgba(252, 252, 252, 0.8);
-
+}
+.block_3{
+  height: 200px;
+  padding: 2%;
 }
 .block_3:hover{
-  top: 190px;
   box-shadow: 0 0 30px rgba(252, 252, 252, 0.8);
+}
+.block_3 img{
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
 
-}
-.contenu_1{
-  justify-content: center;
-  align-items: center;
-  padding-left: 200px;
-}
-.contenu_2 > video{
+.contenu_2 > img{
   position:absolute;
   width: 100%;
   opacity: 0.4;
@@ -295,9 +304,8 @@ nav #ETHIQUE:hover::after{
   border-radius: 45px;
   transition: all 0.4s ease-in-out;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
-  top: 1715px;
 }
-.contenu_2:hover video{
+.contenu_2:hover > img{
   opacity:1;
   scale: 1;
   border-radius: 0;
