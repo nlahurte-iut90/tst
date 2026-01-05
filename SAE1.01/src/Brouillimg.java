@@ -34,21 +34,15 @@ public class Brouillimg {
                 int foundKey = breakKey(inputGL, mode);
                 long end = System.currentTimeMillis();
 
-                System.out.println("\nSuccès ! Clé trouvée : " + foundKey);
+                System.out.println("\nClé trouvée : " + foundKey);
                 System.out.println("Temps d'exécution : " + (end - start) + " ms");
 
                 // Génération de l'image avec la clé trouvée
                 int[] perm = generatePermutation(inputImage.getHeight(), foundKey);
-                BufferedImage recovered = unScrambleLines(inputImage, perm);
-
-                // Vérification et écriture avec gestion d'erreur
-                if (recovered == null) {
-                    System.err.println("Erreur : image récupérée est null");
-                    return;
-                }
+                BufferedImage imageDechiffré = unScrambleLines(inputImage, perm);
 
                 File outputFile = new File("trouve_" + foundKey + ".png");
-                boolean success = ImageIO.write(recovered, "png", outputFile);
+                boolean success = ImageIO.write(imageDechiffré, "png", outputFile);
 
                 if (success) {
                     System.out.println("Résultat sauvegardé dans : " + outputFile.getAbsolutePath());
@@ -56,28 +50,24 @@ public class Brouillimg {
                     System.err.println("Erreur lors de l'écriture de l'image");
                 }
             }
-            return; // Fin du programme pour le mode break
+            return;
         }
 
         // --- BLOC NORMAL (Si on n'est pas en mode break) ---
         int key = Integer.parseInt(args[1]) & 0x7FFF;
         String outPath = (args.length >= 3) ? args[2] : "out.png";
         String process = (args.length >= 4) ? args[3] : "scramble";
-
         int[] perm = generatePermutation(inputImage.getHeight(), key);
-        BufferedImage result;
-
-        if (process.equalsIgnoreCase("unscramble")) {
-            result = unScrambleLines(inputImage, perm);
+        BufferedImage resultat;
+        if (process.equals("unscramble")) {
+            resultat = unScrambleLines(inputImage, perm);
         } else {
-            result = scrambleLines(inputImage, perm);
+            resultat = scrambleLines(inputImage, perm);
         }
-
-        // Calcul du score de différence
-        DistancePixel(inputImage, result);
-
-        ImageIO.write(result, "png", new File(outPath));
-        System.out.println("Traitement terminé. Image enregistrée : " + outPath);
+        // Calcul du score de différence pixel par pixel ( haut precision )
+        DistancePixel(inputImage, resultat);
+        ImageIO.write(resultat, "png", new File(outPath));
+        System.out.println("Image enregistrée : " + outPath);
     }
 
     /**
@@ -111,11 +101,11 @@ public class Brouillimg {
      * @return tableau de taille 'size' contenant une permutation des entiers 0..size-1
      */
     public static int[] generatePermutation(int size, int key) {
-        int[] scrambleTable = new int[size];
+        int[] permutation = new int[size];
         for (int i = 0; i < size; i++) {
-            scrambleTable[i] = scrambledId(i, size, key);
+            permutation[i] = scrambledId(i, size, key);
         }
-        return scrambleTable;
+        return permutation;
     }
 
     /**
@@ -144,12 +134,7 @@ public class Brouillimg {
         return out;
     }
 
-    /**
-     * Démélange les lignes d'une image selon une permutation donnée.
-     * @param inputImg image d'entrée (brouillée)
-     * @param perm permutation des lignes
-     * @return image de sortie avec les lignes démélangées
-     */
+
     public static BufferedImage unScrambleLines(BufferedImage inputImg, int[] perm) {
         int width = inputImg.getWidth();
         int height = inputImg.getHeight();
@@ -170,13 +155,9 @@ public class Brouillimg {
         return out;
     }
 
-    /**
-     * Calcule la distance euclidienne entre deux images.
-     * @param inputImg image d'entrée originale
-     * @param processedImg image traitée
-     * @return score de différence sur 100
-     */
-    public static int DistancePixel(BufferedImage inputImg, BufferedImage processedImg) {
+
+
+    public static void DistancePixel(BufferedImage inputImg, BufferedImage processedImg) {
         int width = inputImg.getWidth();
         int height = inputImg.getHeight();
         int Size = width * height;
@@ -212,104 +193,98 @@ public class Brouillimg {
 
         int scoreSurCent = (int) (score / (Size * 4.41));
         System.out.println("scoreSurCent = " + scoreSurCent + "/ 100");
-        return scoreSurCent;
     }
 
-    /**
-     * Trouve la clé de brouillage par force brute.
-     * @param imageGL image en niveaux de gris
-     * @param mode "Pearson" ou "Euclid"
-     * @return la clé trouvée
-     */
+
     public static int breakKey(int[][] imageGL, String mode) {
-        int bestKey = -1;
-        double bestScore = mode.equals("Pearson") ? -1e18 : 1e18;
-
-        for (int k = 0; k < 32768; k++) {
-            int[] perm = generatePermutation(imageGL.length, k);
-
-            // Débrouiller l'image avec cette clé
-            int[][] unscrambled = applyUnscramble(imageGL, perm);
-
-            // Calculer le score sur l'image débrouillée
-            double score = mode.equals("Pearson") ?
-                    scorePearsonDirect(unscrambled) :
-                    scoreEuclideanDirect(unscrambled);
-
-            if ((mode.equals("Pearson") && score > bestScore) ||
-                    (mode.equals("Euclid") && score < bestScore)) {
-                bestScore = score;
-                bestKey = k;
+        // mode brute-force, on teste tout
+        int cleTrouvee = 0;
+        
+        // On fait deux blocs séparés
+        if (mode.equals("Pearson")) {
+            double maxScore = -1.0; // On cherche le plus grand
+            
+            for (int k = 0; k < 32768; k++) {
+                int[] p = generatePermutation(imageGL.length, k);
+                // On dechiffre en calculant le score sur les lignes permutées
+                double sc = scorePearson(imageGL, p);
+                
+                if (sc > maxScore) {
+                    maxScore = sc;
+                    cleTrouvee = k;
+                }
             }
-
-            // Affichage de progression tous les 2048 essais
-            if (k % 2048 == 0 && k > 0) {
-                System.out.print(".");
+        } else {
+            // mode distance euclidienne
+            double minScore = 999999999.0; // Un très grand nombre
+            
+            for (int k = 0; k < 32768; k++) {
+                int[] p = generatePermutation(imageGL.length, k);
+                double sc = scoreEuclide(imageGL, p);
+                
+                if (sc < minScore) {
+                    minScore = sc;
+                    cleTrouvee = k;
+                }
             }
         }
-        System.out.println(); // Retour à la ligne après la progression
-        return bestKey;
+        
+        return cleTrouvee;
     }
 
-    /**
-     * Applique le débrouillage à une image en niveaux de gris.
-     * @param gl image brouillée
-     * @param perm permutation
-     * @return image débrouillée
-     */
-    public static int[][] applyUnscramble(int[][] gl, int[] perm) {
-        int height = gl.length;
-        int width = gl[0].length;
-        int[][] result = new int[height][width];
-
-        for (int y = 0; y < height; y++) {
-            result[y] = gl[perm[y]].clone();
+    // Distance simple entre deux lignes
+    public static double euclideanDistance(int[] l1, int[] l2) {
+        double somme = 0;
+        for (int i = 0; i < l1.length; i++) {
+            double d = l1[i] - l2[i];
+            somme += d * d;
         }
-        return result;
+        return Math.sqrt(somme);
     }
 
-    /**
-     * Score euclidien : somme des distances entre lignes adjacentes.
-     * Plus le score est faible, plus l'image est cohérente.
-     */
-    public static double scoreEuclideanDirect(int[][] gl) {
+    public static double scoreEuclide(int[][] img, int[] p) {
         double total = 0;
-        for (int i = 0; i < gl.length - 1; i++) {
-            int[] l1 = gl[i], l2 = gl[i + 1];
-            double d = 0;
-            for (int j = 0; j < l1.length; j++) {
-                d += Math.pow(l1[j] - l2[j], 2);
-            }
-            total += Math.sqrt(d);
+        for (int i = 0; i < img.length - 1; i++) {
+            // On regarde la ligne i et i+1 dans l'image reconstituée
+            // Donc on prend les lignes p[i] et p[i+1] dans l'image brouillée
+            total += euclideanDistance(img[p[i]], img[p[i+1]]);
         }
         return total;
     }
 
-    /**
-     * Score Pearson : somme des corrélations entre lignes adjacentes.
-     * Plus le score est élevé, plus l'image est cohérente.
-     */
-    public static double scorePearsonDirect(int[][] gl) {
-        double total = 0;
-        for (int i = 0; i < gl.length - 1; i++) {
-            int[] x = gl[i], y = gl[i + 1];
-            double mx = 0, my = 0, n = x.length;
-            for (int v : x) mx += v;
-            for (int v : y) my += v;
-            mx /= n;
-            my /= n;
-            double num = 0, dx = 0, dy = 0;
-            for (int j = 0; j < n; j++) {
-                double diffX = x[j] - mx, diffY = y[j] - my;
-                num += diffX * diffY;
-                dx += diffX * diffX;
-                dy += diffY * diffY;
-            }
-            if (dx * dy != 0) {
-                total += num / Math.sqrt(dx * dy);
-            }
+    public static double pearsonCorrelation(int[] l1, int[] l2) {
+        int n = l1.length;
+        double m1 = 0;
+        double m2 = 0;
+        
+        // Moyennes
+        for(int x : l1) m1 += x;
+        for(int x : l2) m2 += x;
+        m1 /= n;
+        m2 /= n;
+        
+        double num = 0;
+        double den1 = 0;
+        double den2 = 0;
+        
+        for (int i = 0; i < n; i++) {
+            double ecart1 = l1[i] - m1;
+            double ecart2 = l2[i] - m2;
+            
+            num += ecart1 * ecart2;
+            den1 += ecart1 * ecart1;
+            den2 += ecart2 * ecart2;
         }
-        return total;
+        
+        return num / (Math.sqrt(den1) * Math.sqrt(den2));
+    }
+
+    public static double scorePearson(int[][] img, int[] p) {
+        double tot = 0;
+        for (int i = 0; i < img.length - 1; i++) {
+            tot += pearsonCorrelation(img[p[i]], img[p[i+1]]);
+        }
+        return tot;
     }
 
     /**
